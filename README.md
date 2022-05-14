@@ -11,7 +11,7 @@ Jal-Xil,7605,4,7604,4
 Jal-Zek,7610,4,7612,4  
 
 
-# Adding your own tick counters:
+## Adding your own tick counters:
 
 The format for adding to the list of NPC's this plugin keeps track of is:
 
