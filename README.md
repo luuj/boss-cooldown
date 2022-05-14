@@ -1,4 +1,4 @@
-# BlueLite-Inferno-Plugin
+# BlueLite/Steroid Inferno Plugin
 
 Tick counter for BlueLite / Steroid client. Simply place the jar file in the external plugin folder.
 
