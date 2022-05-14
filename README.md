@@ -4,11 +4,11 @@ Tick counter for BlueLite / Steroid client. Simply place the jar file in the ext
 
 For inferno enemy tick counters, paste the following text in the plugin settings: 
 
-Jal-MejRah,7578,3
-Jal-Ak,7581,6,7583,6,7582,9
-Jal-ImKot,7597,4
-Jal-Xil,7605,4,7604,4
-Jal-Zek,7610,4,7612,4
+Jal-MejRah,7578,3  
+Jal-Ak,7581,6,7583,6,7582,9  
+Jal-ImKot,7597,4  
+Jal-Xil,7605,4,7604,4  
+Jal-Zek,7610,4,7612,4  
 
 
 # Adding your own tick counters:
