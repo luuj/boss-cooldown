@@ -1,12 +1,7 @@
 package net.runelite.client.plugins.tickcounter;
 
-import com.google.inject.Provides;
 import com.google.common.base.Splitter;
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import javax.inject.Inject;
+import com.google.inject.Provides;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
@@ -17,6 +12,11 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @PluginDescriptor(
         name = "<html><font color=#b82584>[J] Tick Counter",
@@ -91,24 +91,6 @@ public class TickCounterPlugin extends Plugin {
                             }
                         }
                     }
-                }
-            }
-
-            if (actor.getName().equalsIgnoreCase("jaltok-jad")) {
-                if (actor.getAnimation() == 7592) {
-                    this.npcList.add(new NpcInfo(npc, 4, Color.CYAN));
-                } else if (actor.getAnimation() == 7593) {
-                    this.npcList.add(new NpcInfo(npc, 4, Color.GREEN));
-                } else if (actor.getAnimation() == 7590) {
-                    this.npcList.add(new NpcInfo(npc, 2, Color.RED));
-                }
-            } else if (actor.getName().equalsIgnoreCase("tztok-jad")) {
-                if (actor.getAnimation() == 2656) {
-                    this.npcList.add(new NpcInfo(npc, 4, Color.CYAN));
-                } else if (actor.getAnimation() == 2652) {
-                    this.npcList.add(new NpcInfo(npc, 4, Color.GREEN));
-                } else if (actor.getAnimation() == 2655) {
-                    this.npcList.add(new NpcInfo(npc, 2, Color.RED));
                 }
             }
         }
