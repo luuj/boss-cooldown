@@ -1,4 +1,4 @@
-# BlueLite/Steroid Inferno Plugin
+# Enemy tick counter for Runelite
 
 Tick counter for BlueLite / Steroid client. Simply place the jar file in the external plugin folder.
 
