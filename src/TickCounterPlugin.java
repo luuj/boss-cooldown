@@ -1,26 +1,25 @@
-package net.runelite.client.plugins.tickcounter;
+package net.runelite.client.plugins.tickcd;
 
-import com.google.common.base.Splitter;
 import com.google.inject.Provides;
+import com.google.common.base.Splitter;
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import javax.inject.Inject;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
-import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.GameTick;
+import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 @PluginDescriptor(
-        name = "<html><font color=#b82584>[J] Tick Counter",
-        description = "Help",
+        name = "<html><font color=#b82584>[J] Boss Tick Counter",
+        description = "Overlays a tick counter for enemies",
         tags = {"inferno"},
         enabledByDefault = false
 )
@@ -33,6 +32,7 @@ public class TickCounterPlugin extends Plugin {
     private TickCounterOverlay overlay;
     @Inject
     private TickCounterConfig config;
+    private boolean XarpusActive, VerzikActive, OlmActive, JadActive;
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     public ArrayList<NpcInfo> npcList = new ArrayList();
 
@@ -46,6 +46,7 @@ public class TickCounterPlugin extends Plugin {
 
     protected void startUp() {
         this.reset();
+        XarpusActive = VerzikActive = OlmActive = JadActive = false;
         this.overlayManager.add(this.overlay);
     }
 
@@ -62,12 +63,47 @@ public class TickCounterPlugin extends Plugin {
     public void onGameTick(GameTick event) {
         for(int i = this.npcList.size() - 1; i >= 0; --i) {
             --((NpcInfo)this.npcList.get(i)).ticks;
-            if (((NpcInfo)this.npcList.get(i)).ticks == 0) {
+
+            if (((NpcInfo)this.npcList.get(i)).ticks <= 0) {
+                if (config.enableJad() && JadActive) {
+                    if (((NpcInfo) this.npcList.get(i)).currNPC.getName().equalsIgnoreCase("JalTok-Jad") ||
+                            ((NpcInfo) this.npcList.get(i)).currNPC.getName().equalsIgnoreCase("TzTok-Jad")) {
+                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
+                            ((NpcInfo) this.npcList.get(i)).ticks += 8;
+                            continue;
+                        }
+                    }
+                }
+                if (config.enableVerzik() && VerzikActive) {
+                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 8374) {
+                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
+                            ((NpcInfo) this.npcList.get(i)).ticks += 7;
+                            continue;
+                        }
+                    }
+                }
+                if (config.enableXarp() && XarpusActive) {
+                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 8340) {
+                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
+                            ((NpcInfo) this.npcList.get(i)).ticks += 8;
+                            continue;
+                        }
+                    }
+                }
+                if (config.enableOlm() && OlmActive) {
+                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 7554) {
+                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
+                            ((NpcInfo) this.npcList.get(i)).ticks += 4;
+                            continue;
+                        }
+                    }
+                }
+
                 this.npcList.remove(i);
             }
         }
-
     }
+
 
     @Subscribe
     public void onAnimationChanged(AnimationChanged event) {
@@ -92,6 +128,74 @@ public class TickCounterPlugin extends Plugin {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Subscribe
+    public void onNpcSpawned(final NpcSpawned event){
+        final NPC npc = event.getNpc();
+
+        if(config.enableJad()){
+            if (npc.getName().equalsIgnoreCase("JalTok-Jad") ||
+                    npc.getName().equalsIgnoreCase("TzTok-Jad") ){
+                JadActive = true;
+                this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
+            }
+        }
+        if(config.enableVerzik()){
+            if (npc.getId() == 8374){
+                VerzikActive = true;
+                this.npcList.add(new NpcInfo(npc, 7, this.config.npcColor()));
+            }
+        }
+        if(config.enableOlm()){
+            if (npc.getId() == 7554){
+                OlmActive = true;
+                this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
+            }
+        }
+        if(config.enableMaiden()){
+            if (npc.getId() == 8366){
+                this.npcList.add(new NpcInfo(npc, 16, this.config.npcColor()));
+            }
+        }
+    }
+
+    @Subscribe
+    public void onNpcDespawned(final NpcDespawned event){
+        final NPC npc = event.getNpc();
+
+        if(config.enableJad()){
+            if (npc.getName().equalsIgnoreCase("JalTok-Jad") ||
+                    npc.getName().equalsIgnoreCase("TzTok-Jad") ){
+                JadActive = false;
+            }
+        }
+        if(config.enableVerzik()){
+            if (npc.getId() == 8374){
+                VerzikActive = false;
+            }
+        }
+        if(config.enableOlm()){
+            if (npc.getId() == 7554){
+                OlmActive = false;
+            }
+        }
+    }
+
+    @Subscribe
+    private void onNpcChanged(final NpcChanged event){
+        final NPC npc = event.getNpc();
+
+        if(config.enableXarp()){
+            if (npc.getId() == 8340){
+                this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
+            }
+        }
+        if(config.enableOlm()){
+            if (npc.getId() == 7554){
+                this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
             }
         }
     }

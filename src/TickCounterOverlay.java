@@ -1,12 +1,18 @@
-package net.runelite.client.plugins.tickcounter;
+package net.runelite.client.plugins.tickcd;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.util.Iterator;
+import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
-import net.runelite.client.ui.overlay.*;
-
-import javax.inject.Inject;
-import java.awt.*;
-import java.util.Iterator;
+import net.runelite.client.ui.overlay.OverlayLayer;
+import net.runelite.client.ui.overlay.OverlayPanel;
+import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.OverlayPriority;
+import net.runelite.client.ui.overlay.OverlayUtil;
 
 public class TickCounterOverlay extends OverlayPanel {
     private final Client client;

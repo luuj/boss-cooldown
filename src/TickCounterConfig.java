@@ -1,19 +1,23 @@
-package net.runelite.client.plugins.tickcounter;
+package net.runelite.client.plugins.tickcd;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.Range;
+import net.runelite.client.config.*;
 
 import java.awt.*;
 
 @ConfigGroup("Inferno")
 public interface TickCounterConfig extends Config {
+    @ConfigSection(
+            name = "Animations",
+            description = "Animation counter settings",
+            position = 0
+    )
+    String animSettings = "animSettings";
     @ConfigItem(
-            name = "NPC List",
+            name = "NPC Animation List",
             keyName = "allNPC",
             description = "NPCid, NPCanimation, NPCticks",
-            position = 0
+            position = 1,
+            section = "animSettings"
     )
     default String allNPC() {
         return "";
@@ -21,10 +25,10 @@ public interface TickCounterConfig extends Config {
 
     @ConfigItem(
             keyName = "npcColor",
-            name = "Highlight Color",
+            name = "Tick Number Color",
             description = "Color of tick counter",
-            position = 1,
-            section = "overlay"
+            position = 2,
+            section = "animSettings"
     )
     default Color npcColor()
     {
@@ -39,8 +43,8 @@ public interface TickCounterConfig extends Config {
             keyName = "textSize",
             name = "Text Size",
             description = "Sets the text size of the ticks overlay",
-            position = 2,
-            section = "overlay"
+            position = 3,
+            section = "animSettings"
     )
     default int textSize() {
         return 30;
@@ -54,10 +58,58 @@ public interface TickCounterConfig extends Config {
             name = "Z Offset",
             keyName = "textZ",
             description = "",
-            position = 3,
-            section = "overlay"
+            position = 4,
+            section = "animSettings"
     )
     default int textZ() {
         return 50;
     }
+
+    @ConfigSection(
+            name = "Extra bosses",
+            description = "Extra settings for bosses that cannot be tracked",
+            position = 5
+    )
+    String extraSettings = "extraSettings";
+
+    @ConfigItem(
+            keyName = "enableJad",
+            name = "Enable Jad Counter",
+            description = "Turn on tick counter for Jad",
+            section = extraSettings,
+            position = 6
+    )
+    default boolean enableJad(){return false;}
+    @ConfigItem(
+            keyName = "enableMaiden",
+            name = "Enable Maiden Crab Counter",
+            description = "Turn on tick counter for Maiden crabs",
+            section = extraSettings,
+            position = 7
+    )
+    default boolean enableMaiden(){return false;}
+    @ConfigItem(
+            keyName = "enableXarp",
+            name = "Enable Xarpus Counter",
+            description = "Turn on tick counter for Xarpus",
+            section = extraSettings,
+            position = 8
+    )
+    default boolean enableXarp(){return false;}
+    @ConfigItem(
+            keyName = "enableVerzik",
+            name = "Enable Verzik P3 Counter",
+            description = "Turn on tick counter for Verzik p3",
+            section = extraSettings,
+            position = 9
+    )
+    default boolean enableVerzik(){return false;}
+    @ConfigItem(
+            keyName = "enableOlm",
+            name = "Enable Olm Counter",
+            description = "Turn on tick counter for Olm",
+            section = extraSettings,
+            position = 10
+    )
+    default boolean enableOlm(){return false;}
 }

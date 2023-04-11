@@ -1,8 +1,7 @@
-package net.runelite.client.plugins.tickcounter;
+package net.runelite.client.plugins.tickcd;
 
+import java.awt.Color;
 import net.runelite.api.NPC;
-
-import java.awt.*;
 
 public class NpcInfo {
     public NPC currNPC;
