@@ -2,7 +2,6 @@ package net.runelite.client.plugins.tickcd;
 
 import com.google.inject.Provides;
 import com.google.common.base.Splitter;
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -190,11 +189,13 @@ public class TickCounterPlugin extends Plugin {
 
         if(config.enableXarp()){
             if (npc.getId() == 8340){
+                XarpusActive=true;
                 this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
             }
         }
         if(config.enableOlm()){
             if (npc.getId() == 7554){
+                OlmActive=true;
                 this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
             }
         }
