@@ -2,6 +2,8 @@ package net.runelite.client.plugins.tickcd;
 
 import com.google.inject.Provides;
 import com.google.common.base.Splitter;
+
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -116,12 +118,18 @@ public class TickCounterPlugin extends Plugin {
             while(var4.hasNext()) {
                 String str = (String)var4.next();
                 String[] stringList = str.split(",");
-                if (stringList.length > 2) {
+                if (stringList.length > 3) {
                     if (actor.getName().equalsIgnoreCase(stringList[0])){
-                        int numEntries = (stringList.length - 1)/2;
+                        int numEntries = (stringList.length - 1)/3;
                         for (int i=0; i<numEntries; i++){
-                            if (actor.getAnimation() == Integer.valueOf(stringList[(i*2)+1].trim())){
-                                this.npcList.add(new NpcInfo(npc, Integer.valueOf(stringList[(i*2)+2].trim())+1, this.config.npcColor()));
+                            if (actor.getAnimation() == Integer.valueOf(stringList[(i*3)+1].trim())){
+                                Color selectCol = this.config.npcColor();
+                                switch(Integer.valueOf(stringList[(i*3)+3].trim())){
+                                    case 1: selectCol = this.config.npcColor(); break;
+                                    case 2: selectCol = this.config.npcColor2(); break;
+                                    case 3: selectCol = this.config.npcColor3(); break;
+                                }
+                                this.npcList.add(new NpcInfo(npc, Integer.valueOf(stringList[(i*3)+2].trim())+1, selectCol));
                                 return;
                             }
                         }
