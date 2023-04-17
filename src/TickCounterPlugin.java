@@ -10,6 +10,7 @@ import java.util.List;
 import javax.inject.Inject;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
@@ -63,38 +64,47 @@ public class TickCounterPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) {
         for(int i = this.npcList.size() - 1; i >= 0; --i) {
-            --((NpcInfo)this.npcList.get(i)).ticks;
+            NpcInfo curr = (NpcInfo)this.npcList.get(i);
+            --curr.ticks;
 
-            if (((NpcInfo)this.npcList.get(i)).ticks <= 0) {
+            if (curr.currNPC.getName().equalsIgnoreCase("Jal-Ak")){
+                if (curr.ticks == 3){
+                    if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.MAGIC)
+                        curr.color = Color.GREEN;
+                    if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.RANGED)
+                        curr.color = Color.CYAN;
+                }
+            }
+            if (curr.ticks <= 0) {
                 if (config.enableJad() && JadActive) {
-                    if (((NpcInfo) this.npcList.get(i)).currNPC.getName().equalsIgnoreCase("JalTok-Jad") ||
-                            ((NpcInfo) this.npcList.get(i)).currNPC.getName().equalsIgnoreCase("TzTok-Jad")) {
-                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
-                            ((NpcInfo) this.npcList.get(i)).ticks += 8;
+                    if (curr.currNPC.getName().equalsIgnoreCase("JalTok-Jad") ||
+                            curr.currNPC.getName().equalsIgnoreCase("TzTok-Jad")) {
+                        if (!curr.currNPC.isDead()) {
+                            curr.ticks += 8;
                             continue;
                         }
                     }
                 }
                 if (config.enableVerzik() && VerzikActive) {
-                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 8374) {
-                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
-                            ((NpcInfo) this.npcList.get(i)).ticks += 7;
+                    if (curr.currNPC.getId() == 8374) {
+                        if (!curr.currNPC.isDead()) {
+                            curr.ticks += 7;
                             continue;
                         }
                     }
                 }
                 if (config.enableXarp() && XarpusActive) {
-                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 8340) {
-                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
-                            ((NpcInfo) this.npcList.get(i)).ticks += 8;
+                    if (curr.currNPC.getId() == 8340) {
+                        if (!curr.currNPC.isDead()) {
+                            curr.ticks += 8;
                             continue;
                         }
                     }
                 }
                 if (config.enableOlm() && OlmActive) {
-                    if (((NpcInfo) this.npcList.get(i)).currNPC.getId() == 7554) {
-                        if (!((NpcInfo) this.npcList.get(i)).currNPC.isDead()) {
-                            ((NpcInfo) this.npcList.get(i)).ticks += 4;
+                    if (curr.currNPC.getId() == 7554) {
+                        if (!curr.currNPC.isDead()) {
+                            curr.ticks += 4;
                             continue;
                         }
                     }
