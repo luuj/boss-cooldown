@@ -65,8 +65,14 @@ public class TickCounterPlugin extends Plugin {
     public void onGameTick(GameTick event) {
         for(int i = this.npcList.size() - 1; i >= 0; --i) {
             NpcInfo curr = (NpcInfo)this.npcList.get(i);
+
+            if (curr==null){
+                return;
+            }
+
             --curr.ticks;
 
+            // Color blob attacks
             if (curr.currNPC.getName().equalsIgnoreCase("Jal-Ak")){
                 if (curr.ticks == 3){
                     if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.MAGIC)
@@ -75,6 +81,8 @@ public class TickCounterPlugin extends Plugin {
                         curr.color = Color.CYAN;
                 }
             }
+
+            //Special counters for untraceable bosses
             if (curr.ticks <= 0) {
                 if (config.enableJad() && JadActive) {
                     if (curr.currNPC.getName().equalsIgnoreCase("JalTok-Jad") ||
@@ -161,7 +169,7 @@ public class TickCounterPlugin extends Plugin {
             }
         }
         if(config.enableVerzik()){
-            if (npc.getId() == 8374){
+            if (npc.getId() == 8374 || npc.getId() == 10852){
                 VerzikActive = true;
                 this.npcList.add(new NpcInfo(npc, 7, this.config.npcColor()));
             }
@@ -173,7 +181,7 @@ public class TickCounterPlugin extends Plugin {
             }
         }
         if(config.enableMaiden()){
-            if (npc.getId() == 8366){
+            if (npc.getId() == 8366 || npc.getId() == 10828){
                 this.npcList.add(new NpcInfo(npc, 16, this.config.npcColor()));
             }
         }
@@ -190,13 +198,18 @@ public class TickCounterPlugin extends Plugin {
             }
         }
         if(config.enableVerzik()){
-            if (npc.getId() == 8374){
+            if (npc.getId() == 8374 || npc.getId() == 10852){
                 VerzikActive = false;
             }
         }
         if(config.enableOlm()){
             if (npc.getId() == 7554){
                 OlmActive = false;
+            }
+        }
+        if(config.enableXarp()){
+            if (npc.getId() == 8340 || npc.getId() == 10772){
+                XarpusActive = false;
             }
         }
     }
@@ -206,7 +219,7 @@ public class TickCounterPlugin extends Plugin {
         final NPC npc = event.getNpc();
 
         if(config.enableXarp()){
-            if (npc.getId() == 8340){
+            if (npc.getId() == 8340 || npc.getId() == 10772){
                 XarpusActive=true;
                 this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
             }

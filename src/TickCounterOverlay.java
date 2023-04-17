@@ -34,7 +34,14 @@ public class TickCounterOverlay extends OverlayPanel {
 
         while(var2.hasNext()) {
             NpcInfo npcInfo = (NpcInfo)var2.next();
+            if (npcInfo == null){
+                return super.render(graphics);
+            }
+
             String textOverlay = Integer.toString(npcInfo.ticks);
+            if (npcInfo.ticks < 0){
+                this.plugin.npcList.remove(npcInfo);
+            }
 
             Point textLoc = npcInfo.currNPC.getCanvasTextLocation(graphics, textOverlay, this.config.textZ());
             if (textLoc != null) {
