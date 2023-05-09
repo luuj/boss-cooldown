@@ -35,6 +35,7 @@ public class TickCounterPlugin extends Plugin {
     @Inject
     private TickCounterConfig config;
     private boolean XarpusActive, VerzikActive, OlmActive, JadActive;
+    private short OlmPhase;
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     public ArrayList<NpcInfo> npcList = new ArrayList();
 
@@ -48,7 +49,6 @@ public class TickCounterPlugin extends Plugin {
 
     protected void startUp() {
         this.reset();
-        XarpusActive = VerzikActive = OlmActive = JadActive = false;
         this.overlayManager.add(this.overlay);
     }
 
@@ -59,17 +59,14 @@ public class TickCounterPlugin extends Plugin {
 
     private void reset() {
         this.npcList.clear();
+        OlmPhase = 1;
+        XarpusActive = VerzikActive = OlmActive = JadActive = false;
     }
 
     @Subscribe
     public void onGameTick(GameTick event) {
         for(int i = this.npcList.size() - 1; i >= 0; --i) {
             NpcInfo curr = (NpcInfo)this.npcList.get(i);
-
-            if (curr==null){
-                return;
-            }
-
             --curr.ticks;
 
             // Color blob attacks
@@ -174,12 +171,6 @@ public class TickCounterPlugin extends Plugin {
                 this.npcList.add(new NpcInfo(npc, 7, this.config.npcColor()));
             }
         }
-        if(config.enableOlm()){
-            if (npc.getId() == 7554){
-                OlmActive = true;
-                this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
-            }
-        }
         if(config.enableMaiden()){
             if (npc.getId() == 8366 || npc.getId() == 10828){
                 this.npcList.add(new NpcInfo(npc, 16, this.config.npcColor()));
@@ -204,6 +195,9 @@ public class TickCounterPlugin extends Plugin {
         }
         if(config.enableOlm()){
             if (npc.getId() == 7554){
+                if (OlmPhase == 4){
+                    OlmPhase = 1;
+                }
                 OlmActive = false;
             }
         }
@@ -227,7 +221,14 @@ public class TickCounterPlugin extends Plugin {
         if(config.enableOlm()){
             if (npc.getId() == 7554){
                 OlmActive=true;
-                this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
+
+                if (OlmPhase == 1){
+                    this.npcList.add(new NpcInfo(npc, 5, this.config.npcColor()));
+                    ++OlmPhase;
+                }else{
+                    this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
+                    ++OlmPhase;
+                }
             }
         }
     }
