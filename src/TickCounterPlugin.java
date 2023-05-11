@@ -22,7 +22,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @PluginDescriptor(
         name = "<html><font color=#b82584>[J] Boss Tick Counter",
         description = "Overlays a tick counter for enemies",
-        tags = {"inferno"},
+        tags = {"inferno", "boss", "tick"},
         enabledByDefault = false
 )
 public class TickCounterPlugin extends Plugin {
@@ -34,7 +34,7 @@ public class TickCounterPlugin extends Plugin {
     private TickCounterOverlay overlay;
     @Inject
     private TickCounterConfig config;
-    private boolean XarpusActive, VerzikActive, OlmActive;
+    private boolean OlmActive;
     private short OlmPhase;
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     public ArrayList<NpcInfo> npcList = new ArrayList();
@@ -60,7 +60,7 @@ public class TickCounterPlugin extends Plugin {
     private void reset() {
         this.npcList.clear();
         OlmPhase = 1;
-        XarpusActive = VerzikActive = OlmActive = false;
+        OlmActive = false;
     }
 
     @Subscribe
@@ -81,22 +81,6 @@ public class TickCounterPlugin extends Plugin {
 
             //Special counters for untraceable bosses
             if (curr.ticks <= 0) {
-                if (config.enableVerzik() && VerzikActive) {
-                    if (curr.currNPC.getId() == 8374) {
-                        if (!curr.currNPC.isDead()) {
-                            curr.ticks += 7;
-                            continue;
-                        }
-                    }
-                }
-                if (config.enableXarp() && XarpusActive) {
-                    if (curr.currNPC.getId() == 8340) {
-                        if (!curr.currNPC.isDead()) {
-                            curr.ticks += 8;
-                            continue;
-                        }
-                    }
-                }
                 if (config.enableOlm() && OlmActive) {
                     if (curr.currNPC.getId() == 7554) {
                         if (!curr.currNPC.isDead()) {
@@ -145,32 +129,11 @@ public class TickCounterPlugin extends Plugin {
         }
     }
 
-    @Subscribe
-    public void onNpcSpawned(final NpcSpawned event){
-        final NPC npc = event.getNpc();
-
-        if(config.enableVerzik()){
-            if (npc.getId() == 8374 || npc.getId() == 10852){
-                VerzikActive = true;
-                this.npcList.add(new NpcInfo(npc, 7, this.config.npcColor()));
-            }
-        }
-        if(config.enableMaiden()){
-            if (npc.getId() == 8366 || npc.getId() == 10828){
-                this.npcList.add(new NpcInfo(npc, 16, this.config.npcColor()));
-            }
-        }
-    }
 
     @Subscribe
     public void onNpcDespawned(final NpcDespawned event){
         final NPC npc = event.getNpc();
 
-        if(config.enableVerzik()){
-            if (npc.getId() == 8374 || npc.getId() == 10852){
-                VerzikActive = false;
-            }
-        }
         if(config.enableOlm()){
             if (npc.getId() == 7554){
                 if (OlmPhase == 4){
@@ -179,23 +142,12 @@ public class TickCounterPlugin extends Plugin {
                 OlmActive = false;
             }
         }
-        if(config.enableXarp()){
-            if (npc.getId() == 8340 || npc.getId() == 10772){
-                XarpusActive = false;
-            }
-        }
     }
 
     @Subscribe
     private void onNpcChanged(final NpcChanged event){
         final NPC npc = event.getNpc();
 
-        if(config.enableXarp()){
-            if (npc.getId() == 8340 || npc.getId() == 10772){
-                XarpusActive=true;
-                this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
-            }
-        }
         if(config.enableOlm()){
             if (npc.getId() == 7554){
                 OlmActive=true;

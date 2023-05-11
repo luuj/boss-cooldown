@@ -97,30 +97,6 @@ public interface TickCounterConfig extends Config {
     String extraSettings = "extraSettings";
 
     @ConfigItem(
-            keyName = "enableMaiden",
-            name = "Enable Maiden Crab Counter",
-            description = "Turn on tick counter for Maiden crabs",
-            section = extraSettings,
-            position = 9
-    )
-    default boolean enableMaiden(){return false;}
-    @ConfigItem(
-            keyName = "enableXarp",
-            name = "Enable Xarpus Counter",
-            description = "Turn on tick counter for Xarpus",
-            section = extraSettings,
-            position = 10
-    )
-    default boolean enableXarp(){return false;}
-    @ConfigItem(
-            keyName = "enableVerzik",
-            name = "Enable Verzik P3 Counter",
-            description = "Turn on tick counter for Verzik p3",
-            section = extraSettings,
-            position = 11
-    )
-    default boolean enableVerzik(){return false;}
-    @ConfigItem(
             keyName = "enableOlm",
             name = "Enable Olm Counter",
             description = "Turn on tick counter for Olm",
