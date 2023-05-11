@@ -97,14 +97,6 @@ public interface TickCounterConfig extends Config {
     String extraSettings = "extraSettings";
 
     @ConfigItem(
-            keyName = "enableJad",
-            name = "Enable Jad Counter",
-            description = "Turn on tick counter for Jad",
-            section = extraSettings,
-            position = 8
-    )
-    default boolean enableJad(){return false;}
-    @ConfigItem(
             keyName = "enableMaiden",
             name = "Enable Maiden Crab Counter",
             description = "Turn on tick counter for Maiden crabs",

@@ -34,7 +34,7 @@ public class TickCounterPlugin extends Plugin {
     private TickCounterOverlay overlay;
     @Inject
     private TickCounterConfig config;
-    private boolean XarpusActive, VerzikActive, OlmActive, JadActive;
+    private boolean XarpusActive, VerzikActive, OlmActive;
     private short OlmPhase;
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     public ArrayList<NpcInfo> npcList = new ArrayList();
@@ -60,7 +60,7 @@ public class TickCounterPlugin extends Plugin {
     private void reset() {
         this.npcList.clear();
         OlmPhase = 1;
-        XarpusActive = VerzikActive = OlmActive = JadActive = false;
+        XarpusActive = VerzikActive = OlmActive = false;
     }
 
     @Subscribe
@@ -81,15 +81,6 @@ public class TickCounterPlugin extends Plugin {
 
             //Special counters for untraceable bosses
             if (curr.ticks <= 0) {
-                if (config.enableJad() && JadActive) {
-                    if (curr.currNPC.getName().equalsIgnoreCase("JalTok-Jad") ||
-                            curr.currNPC.getName().equalsIgnoreCase("TzTok-Jad")) {
-                        if (!curr.currNPC.isDead()) {
-                            curr.ticks += 8;
-                            continue;
-                        }
-                    }
-                }
                 if (config.enableVerzik() && VerzikActive) {
                     if (curr.currNPC.getId() == 8374) {
                         if (!curr.currNPC.isDead()) {
@@ -158,13 +149,6 @@ public class TickCounterPlugin extends Plugin {
     public void onNpcSpawned(final NpcSpawned event){
         final NPC npc = event.getNpc();
 
-        if(config.enableJad()){
-            if (npc.getName().equalsIgnoreCase("JalTok-Jad") ||
-                    npc.getName().equalsIgnoreCase("TzTok-Jad") ){
-                JadActive = true;
-                this.npcList.add(new NpcInfo(npc, 8, this.config.npcColor()));
-            }
-        }
         if(config.enableVerzik()){
             if (npc.getId() == 8374 || npc.getId() == 10852){
                 VerzikActive = true;
@@ -182,12 +166,6 @@ public class TickCounterPlugin extends Plugin {
     public void onNpcDespawned(final NpcDespawned event){
         final NPC npc = event.getNpc();
 
-        if(config.enableJad()){
-            if (npc.getName().equalsIgnoreCase("JalTok-Jad") ||
-                    npc.getName().equalsIgnoreCase("TzTok-Jad") ){
-                JadActive = false;
-            }
-        }
         if(config.enableVerzik()){
             if (npc.getId() == 8374 || npc.getId() == 10852){
                 VerzikActive = false;
