@@ -5,8 +5,8 @@ import com.google.common.base.Splitter;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -70,7 +70,7 @@ public class TickCounterPlugin extends Plugin {
             --curr.ticks;
 
             // Color blob attacks
-            if (curr.currNPC.getName().equalsIgnoreCase("Jal-Ak")){
+            if (Objects.requireNonNull(curr.currNPC.getName()).equalsIgnoreCase("Jal-Ak")){
                 if (curr.ticks == 3){
                     if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.MAGIC)
                         curr.color = Color.GREEN;
@@ -103,23 +103,27 @@ public class TickCounterPlugin extends Plugin {
             NPC npc = (NPC)actor;
 
             List<String> strList = SPLITTER.splitToList(this.config.allNPC());
-            Iterator var4 = strList.iterator();
 
-            while(var4.hasNext()) {
-                String str = (String)var4.next();
+            for (String str : strList) {
                 String[] stringList = str.split(",");
                 if (stringList.length > 3) {
-                    if (actor.getName().equalsIgnoreCase(stringList[0])){
-                        int numEntries = (stringList.length - 1)/3;
-                        for (int i=0; i<numEntries; i++){
-                            if (actor.getAnimation() == Integer.valueOf(stringList[(i*3)+1].trim())){
+                    if (Objects.requireNonNull(actor.getName()).equalsIgnoreCase(stringList[0])) {
+                        int numEntries = (stringList.length - 1) / 3;
+                        for (int i = 0; i < numEntries; i++) {
+                            if (actor.getAnimation() == Integer.parseInt(stringList[(i * 3) + 1].trim())) {
                                 Color selectCol = this.config.npcColor();
-                                switch(Integer.valueOf(stringList[(i*3)+3].trim())){
-                                    case 1: selectCol = this.config.npcColor(); break;
-                                    case 2: selectCol = this.config.npcColor2(); break;
-                                    case 3: selectCol = this.config.npcColor3(); break;
+                                switch (Integer.parseInt(stringList[(i * 3) + 3].trim())) {
+                                    case 1:
+                                        selectCol = this.config.npcColor();
+                                        break;
+                                    case 2:
+                                        selectCol = this.config.npcColor2();
+                                        break;
+                                    case 3:
+                                        selectCol = this.config.npcColor3();
+                                        break;
                                 }
-                                this.npcList.add(new NpcInfo(npc, Integer.valueOf(stringList[(i*3)+2].trim())+1, selectCol));
+                                this.npcList.add(new NpcInfo(npc, Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1, selectCol));
                                 return;
                             }
                         }
@@ -154,11 +158,10 @@ public class TickCounterPlugin extends Plugin {
 
                 if (OlmPhase == 1){
                     this.npcList.add(new NpcInfo(npc, 5, this.config.npcColor()));
-                    ++OlmPhase;
                 }else{
                     this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
-                    ++OlmPhase;
                 }
+                ++OlmPhase;
             }
         }
     }
