@@ -5,18 +5,18 @@ import com.google.common.base.Splitter;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
-import net.runelite.api.Actor;
-import net.runelite.api.Client;
-import net.runelite.api.HeadIcon;
-import net.runelite.api.NPC;
+
+import net.runelite.api.*;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.projectilecd.ProjectileInfo;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
@@ -38,6 +38,7 @@ public class TickCounterPlugin extends Plugin {
     private short OlmPhase;
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     public ArrayList<NpcInfo> npcList = new ArrayList();
+    public ArrayList<NPC> jads = new ArrayList();
 
     public TickCounterPlugin() {
     }
@@ -79,7 +80,7 @@ public class TickCounterPlugin extends Plugin {
                 }
             }
 
-            //Special counters for untraceable bosses
+            //Special counter for Olm
             if (curr.ticks <= 0) {
                 if (config.enableOlm() && OlmActive) {
                     if (curr.currNPC.getId() == 7554) {
@@ -133,7 +134,7 @@ public class TickCounterPlugin extends Plugin {
         }
     }
 
-
+    /* Olm code*/
     @Subscribe
     public void onNpcDespawned(final NpcDespawned event){
         final NPC npc = event.getNpc();
@@ -144,6 +145,12 @@ public class TickCounterPlugin extends Plugin {
                     OlmPhase = 1;
                 }
                 OlmActive = false;
+            }
+        }
+
+        if(config.enableJad()){
+            if (npc.getId() == 10623){
+                this.jads.remove(npc);
             }
         }
     }
@@ -163,6 +170,29 @@ public class TickCounterPlugin extends Plugin {
                 }
                 ++OlmPhase;
             }
+        }
+    }
+
+    /*Jad code*/
+    @Subscribe
+    public void onNpcSpawned(final NpcSpawned event){
+        final NPC npc = event.getNpc();
+
+        if(config.enableJad()){
+            if (npc.getId() == 10623){
+                this.npcList.add(new NpcInfo(npc,8,this.config.npcColor()));
+                this.jads.add(npc);
+            }
+        }
+    }
+
+    @Subscribe
+    public void onSoundEffectPlayed(SoundEffectPlayed soundEffectPlayed)
+    {
+        int soundId = soundEffectPlayed.getSoundId();
+        if(config.enableJad() && soundId == 163 && this.jads.size() == 1){
+            NPC curr = (NPC) this.jads.get(0);
+            this.npcList.add(new NpcInfo(curr,9,this.config.npcColor()));
         }
     }
 }
