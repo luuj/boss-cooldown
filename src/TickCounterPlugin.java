@@ -60,6 +60,7 @@ public class TickCounterPlugin extends Plugin {
 
     private void reset() {
         this.npcList.clear();
+        this.jads.clear();
         OlmPhase = 1;
         OlmActive = false;
     }
@@ -149,7 +150,7 @@ public class TickCounterPlugin extends Plugin {
         }
 
         if(config.enableJad()){
-            if (npc.getId() == 10623){
+            if (Objects.equals(npc.getName(), "JalTok-Jad")){
                 this.jads.remove(npc);
             }
         }
@@ -179,7 +180,7 @@ public class TickCounterPlugin extends Plugin {
         final NPC npc = event.getNpc();
 
         if(config.enableJad()){
-            if (npc.getId() == 10623){
+            if (Objects.equals(npc.getName(), "JalTok-Jad")){
                 this.npcList.add(new NpcInfo(npc,8,this.config.npcColor()));
                 this.jads.add(npc);
             }
