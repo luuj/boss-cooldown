@@ -7,6 +7,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.inject.Inject;
 
 import net.runelite.api.*;
@@ -128,7 +129,14 @@ public class TickcdPlugin extends Plugin {
                                         selectCol = this.config.npcColor4();
                                         break;
                                 }
-                                this.npcList.add(new NpcInfo(npc, Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1, selectCol));
+                                //Update existing entry if another animation occurs
+                                Optional<NpcInfo> tempNPC = containsNPC(npcList, npc);
+                                if(tempNPC.isPresent()){
+                                    tempNPC.get().ticks = Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1;
+                                    tempNPC.get().color = selectCol;
+                                }else {
+                                    this.npcList.add(new NpcInfo(npc, Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1, selectCol));
+                                }
                                 return;
                             }
                         }
@@ -204,5 +212,9 @@ public class TickcdPlugin extends Plugin {
 
             jadCount++;
         }
+    }
+
+    public Optional<NpcInfo> containsNPC(final ArrayList<NpcInfo>  list, final NPC name){
+        return list.stream().filter(o -> o.currNPC.equals(name)).findFirst();
     }
 }
