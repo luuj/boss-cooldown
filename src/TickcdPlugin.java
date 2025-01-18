@@ -124,6 +124,9 @@ public class TickcdPlugin extends Plugin {
                                     case 3:
                                         selectCol = this.config.npcColor3();
                                         break;
+                                    case 4:
+                                        selectCol = this.config.npcColor4();
+                                        break;
                                 }
                                 this.npcList.add(new NpcInfo(npc, Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1, selectCol));
                                 return;
