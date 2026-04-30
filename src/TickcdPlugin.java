@@ -1,17 +1,23 @@
 package net.runelite.client.plugins.tickcd;
 
-import com.google.inject.Provides;
 import com.google.common.base.Splitter;
-
-import java.awt.*;
+import com.google.inject.Provides;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
-
-import net.runelite.api.*;
-import net.runelite.api.events.*;
+import net.runelite.api.Actor;
+import net.runelite.api.Client;
+import net.runelite.api.HeadIcon;
+import net.runelite.api.NPC;
+import net.runelite.api.Player;
+import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.events.NpcChanged;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.SoundEffectPlayed;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -25,198 +31,189 @@ import net.runelite.client.ui.overlay.OverlayManager;
         enabledByDefault = false
 )
 public class TickcdPlugin extends Plugin {
+    private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
+    private static final int OLM_HEAD_NPC_ID = 7554;
+    private static final int JAD_ATTACK_SOUND_ID = 163;
+    private static final String JAL_AK_NAME = "Jal-Ak";
+    private static final String JALTOK_JAD_NAME = "JalTok-Jad";
+
     @Inject
     private Client client;
+
     @Inject
     private OverlayManager overlayManager;
+
     @Inject
     private TickcdOverlay overlay;
+
     @Inject
     private TickcdConfig config;
-    private boolean OlmActive;
-    private short OlmPhase;
-    private short jadCount;
-    private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
-    public ArrayList<NpcInfo> npcList = new ArrayList();
-    public ArrayList<NPC> jads = new ArrayList();
 
-    public TickcdPlugin() {
-    }
+    final List<NpcInfo> npcList = new ArrayList<>();
+    private final List<NPC> jads = new ArrayList<>();
+
+    private boolean olmActive;
+    private short olmPhase;
+    private short jadCount;
 
     @Provides
     TickcdConfig getConfig(ConfigManager configManager) {
-        return (TickcdConfig)configManager.getConfig(TickcdConfig.class);
+        return configManager.getConfig(TickcdConfig.class);
     }
 
+    @Override
     protected void startUp() {
-        this.reset();
-        this.overlayManager.add(this.overlay);
+        reset();
+        overlayManager.add(overlay);
     }
 
+    @Override
     protected void shutDown() {
-        this.reset();
-        this.overlayManager.remove(this.overlay);
+        reset();
+        overlayManager.remove(overlay);
     }
 
     private void reset() {
-        this.npcList.clear();
-        this.jads.clear();
-        OlmPhase = 1;
-        OlmActive = false;
+        npcList.clear();
+        jads.clear();
+        olmPhase = 1;
+        olmActive = false;
         jadCount = 0;
     }
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        for(int i = this.npcList.size() - 1; i >= 0; --i) {
-            NpcInfo curr = (NpcInfo)this.npcList.get(i);
+        for (int i = npcList.size() - 1; i >= 0; --i) {
+            NpcInfo curr = npcList.get(i);
             --curr.ticks;
 
-            // Color blob attacks
-            if (curr.currNPC.getName().equalsIgnoreCase("Jal-Ak")){
-                if (curr.ticks == 3){
-                    if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.MAGIC)
-                        curr.color = Color.GREEN;
-                    if(client.getLocalPlayer().getOverheadIcon() == HeadIcon.RANGED)
-                        curr.color = Color.CYAN;
+            if (JAL_AK_NAME.equalsIgnoreCase(curr.currNPC.getName()) && curr.ticks == 3) {
+                Player localPlayer = client.getLocalPlayer();
+                if (localPlayer != null && localPlayer.getOverheadIcon() == HeadIcon.MAGIC) {
+                    curr.color = Color.GREEN;
+                } else if (localPlayer != null && localPlayer.getOverheadIcon() == HeadIcon.RANGED) {
+                    curr.color = Color.CYAN;
                 }
             }
 
             if (curr.ticks <= 0 || curr.currNPC.isDead()) {
-                //Special counter for Olm
-                if (config.enableOlm() && OlmActive) {
-                    if (curr.currNPC.getId() == 7554) {
-                        if (!curr.currNPC.isDead()) {
-                            curr.ticks += 4;
-                            continue;
-                        }
-                    }
+                if (config.enableOlm() && olmActive && curr.currNPC.getId() == OLM_HEAD_NPC_ID && !curr.currNPC.isDead()) {
+                    curr.ticks += 4;
+                    continue;
                 }
 
-                this.npcList.remove(i);
+                npcList.remove(i);
             }
         }
     }
-
 
     @Subscribe
     public void onAnimationChanged(AnimationChanged event) {
         Actor actor = event.getActor();
-        if (actor.getName() != null && actor instanceof NPC) {
-            NPC npc = (NPC)actor;
+        if (!(actor instanceof NPC) || actor.getName() == null) {
+            return;
+        }
 
-            List<String> strList = SPLITTER.splitToList(this.config.allNPC());
+        NPC npc = (NPC) actor;
+        for (String str : SPLITTER.splitToList(config.allNPC())) {
+            String[] stringList = str.split(",");
+            if (stringList.length <= 3 || !actor.getName().equalsIgnoreCase(stringList[0])) {
+                continue;
+            }
 
-            for (String str : strList) {
-                String[] stringList = str.split(",");
-                if (stringList.length > 3) {
-                    if (Objects.requireNonNull(actor.getName()).equalsIgnoreCase(stringList[0])) {
-                        int numEntries = (stringList.length - 1) / 3;
-                        for (int i = 0; i < numEntries; i++) {
-                            if (actor.getAnimation() == Integer.parseInt(stringList[(i * 3) + 1].trim())) {
-                                Color selectCol = this.config.npcColor();
-                                switch (Integer.parseInt(stringList[(i * 3) + 3].trim())) {
-                                    case 1:
-                                        selectCol = this.config.npcColor();
-                                        break;
-                                    case 2:
-                                        selectCol = this.config.npcColor2();
-                                        break;
-                                    case 3:
-                                        selectCol = this.config.npcColor3();
-                                        break;
-                                    case 4:
-                                        selectCol = this.config.npcColor4();
-                                        break;
-                                    case 5:
-                                        selectCol = this.config.npcColor5();
-                                        break;
-                                }
-                                //Update existing entry if another animation occurs
-                                Optional<NpcInfo> tempNPC = containsNPC(npcList, npc);
-                                if(tempNPC.isPresent()){
-                                    tempNPC.get().ticks = Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1;
-                                    tempNPC.get().color = selectCol;
-                                }else {
-                                    this.npcList.add(new NpcInfo(npc, Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1, selectCol));
-                                }
-                                return;
-                            }
-                        }
-                    }
+            int numEntries = (stringList.length - 1) / 3;
+            for (int i = 0; i < numEntries; i++) {
+                if (actor.getAnimation() != Integer.parseInt(stringList[(i * 3) + 1].trim())) {
+                    continue;
                 }
+
+                Color selectedColor = getConfiguredColor(Integer.parseInt(stringList[(i * 3) + 3].trim()));
+                int ticks = Integer.parseInt(stringList[(i * 3) + 2].trim()) + 1;
+                Optional<NpcInfo> existingNpc = containsNPC(npcList, npc);
+                if (existingNpc.isPresent()) {
+                    existingNpc.get().ticks = ticks;
+                    existingNpc.get().color = selectedColor;
+                } else {
+                    npcList.add(new NpcInfo(npc, ticks, selectedColor));
+                }
+                return;
             }
         }
     }
 
-    /* Olm code*/
+    private Color getConfiguredColor(int colorNumber) {
+        switch (colorNumber) {
+            case 2:
+                return config.npcColor2();
+            case 3:
+                return config.npcColor3();
+            case 4:
+                return config.npcColor4();
+            case 5:
+                return config.npcColor5();
+            default:
+                return config.npcColor();
+        }
+    }
+
     @Subscribe
-    public void onNpcDespawned(final NpcDespawned event){
+    public void onNpcDespawned(final NpcDespawned event) {
         final NPC npc = event.getNpc();
 
-        if(config.enableOlm()){
-            if (npc.getId() == 7554){
-                if (OlmPhase == 4){
-                    OlmPhase = 1;
-                }
-                OlmActive = false;
+        if (config.enableOlm() && npc.getId() == OLM_HEAD_NPC_ID) {
+            if (olmPhase == 4) {
+                olmPhase = 1;
             }
+            olmActive = false;
         }
 
-        if(config.enableJad()){
-            if (Objects.equals(npc.getName(), "JalTok-Jad")){
-                this.jads.remove(npc);
-            }
+        if (config.enableJad() && JALTOK_JAD_NAME.equals(npc.getName())) {
+            jads.remove(npc);
         }
     }
 
     @Subscribe
-    public void onNpcChanged(final NpcChanged event){
+    public void onNpcChanged(final NpcChanged event) {
         final NPC npc = event.getNpc();
 
-        if(config.enableOlm()){
-            if (npc.getId() == 7554){
-                OlmActive=true;
+        if (config.enableOlm() && npc.getId() == OLM_HEAD_NPC_ID) {
+            olmActive = true;
 
-                if (OlmPhase == 1){
-                    this.npcList.add(new NpcInfo(npc, 5, this.config.npcColor()));
-                }else{
-                    this.npcList.add(new NpcInfo(npc, 4, this.config.npcColor()));
-                }
-                ++OlmPhase;
+            if (olmPhase == 1) {
+                npcList.add(new NpcInfo(npc, 5, config.npcColor()));
+            } else {
+                npcList.add(new NpcInfo(npc, 4, config.npcColor()));
             }
+            ++olmPhase;
         }
     }
 
-    /*Jad code*/
     @Subscribe
-    public void onNpcSpawned(final NpcSpawned event){
+    public void onNpcSpawned(final NpcSpawned event) {
         final NPC npc = event.getNpc();
 
-        if(config.enableJad()){
-            if (Objects.equals(npc.getName(), "JalTok-Jad")){
-                this.npcList.add(new NpcInfo(npc,8,this.config.npcColor()));
-                this.jads.add(npc);
-            }
+        if (config.enableJad() && JALTOK_JAD_NAME.equals(npc.getName())) {
+            npcList.add(new NpcInfo(npc, 8, config.npcColor()));
+            jads.add(npc);
         }
     }
 
     @Subscribe
-    public void onSoundEffectPlayed(SoundEffectPlayed event)
-    {
-        int soundId = event.getSoundId();
-        if(config.enableJad() && soundId == 163){
-            if(jadCount >= this.jads.size()){
-                jadCount = 0;
-            }
-            NPC curr = (NPC) this.jads.get(jadCount);
-            this.npcList.add(new NpcInfo(curr,9,this.config.npcColor()));
-
-            jadCount++;
+    public void onSoundEffectPlayed(SoundEffectPlayed event) {
+        if (!config.enableJad() || event.getSoundId() != JAD_ATTACK_SOUND_ID || jads.isEmpty()) {
+            return;
         }
+
+        if (jadCount >= jads.size()) {
+            jadCount = 0;
+        }
+
+        NPC curr = jads.get(jadCount);
+        npcList.add(new NpcInfo(curr, 9, config.npcColor()));
+        jadCount++;
     }
 
-    public Optional<NpcInfo> containsNPC(final ArrayList<NpcInfo>  list, final NPC name){
-        return list.stream().filter(o -> o.currNPC.equals(name)).findFirst();
+    private Optional<NpcInfo> containsNPC(final List<NpcInfo> list, final NPC npc) {
+        return list.stream().filter(o -> o.currNPC.equals(npc)).findFirst();
     }
 }

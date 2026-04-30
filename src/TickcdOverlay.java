@@ -6,37 +6,36 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.util.Iterator;
 import javax.inject.Inject;
-import net.runelite.api.Client;
 import net.runelite.api.Point;
+import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.OverlayUtil;
 
 public class TickcdOverlay extends OverlayPanel {
-    private final Client client;
     private final TickcdPlugin plugin;
     private final TickcdConfig config;
 
     @Inject
-    private TickcdOverlay(Client client, TickcdPlugin plugin, TickcdConfig config) {
-        this.client = client;
+    private TickcdOverlay(TickcdPlugin plugin, TickcdConfig config) {
         this.plugin = plugin;
         this.config = config;
         this.setPosition(OverlayPosition.DYNAMIC);
-        this.setPriority(OverlayPriority.HIGH);
+        this.setPriority(Overlay.PRIORITY_HIGH);
         this.setLayer(OverlayLayer.ABOVE_SCENE);
     }
 
+    @Override
     public Dimension render(Graphics2D graphics) {
-        Iterator var2 = this.plugin.npcList.iterator();
+        Iterator<NpcInfo> npcIterator = this.plugin.npcList.iterator();
 
-        while(var2.hasNext()) {
-            NpcInfo npcInfo = (NpcInfo)var2.next();
+        while(npcIterator.hasNext()) {
+            NpcInfo npcInfo = npcIterator.next();
             String textOverlay = Integer.toString(npcInfo.ticks);
             if (npcInfo.ticks < 0){
-                this.plugin.npcList.remove(npcInfo);
+                npcIterator.remove();
+                continue;
             }
 
             Point textLoc = npcInfo.currNPC.getCanvasTextLocation(graphics, textOverlay, this.config.textZ());

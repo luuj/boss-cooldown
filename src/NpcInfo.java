@@ -4,7 +4,7 @@ import java.awt.Color;
 import net.runelite.api.NPC;
 
 public class NpcInfo {
-    public NPC currNPC;
+    public final NPC currNPC;
     public int ticks;
     public Color color;
 
