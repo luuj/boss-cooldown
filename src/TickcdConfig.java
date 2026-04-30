@@ -70,6 +70,19 @@ public interface TickcdConfig extends Config {
     {
         return Color.MAGENTA;
     }
+
+    @ConfigItem(
+            keyName = "npcColor5",
+            name = "Tick Number Color 5",
+            description = "Color of tick counter 5",
+            position = 6,
+            section = "animSettings"
+    )
+    default Color npcColor5()
+    {
+        return Color.ORANGE;
+    }
+
     @Range(
             min = 5,
             max = 50
@@ -78,7 +91,7 @@ public interface TickcdConfig extends Config {
             keyName = "textSize",
             name = "Text Size",
             description = "Sets the text size of the ticks overlay",
-            position = 6,
+            position = 7,
             section = "animSettings"
     )
     default int textSize() {
@@ -93,7 +106,7 @@ public interface TickcdConfig extends Config {
             name = "Z Offset",
             keyName = "textZ",
             description = "",
-            position = 7,
+            position = 8,
             section = "animSettings"
     )
     default int textZ() {
@@ -103,7 +116,7 @@ public interface TickcdConfig extends Config {
     @ConfigSection(
             name = "Extra bosses",
             description = "Extra settings for bosses that cannot be tracked",
-            position = 8
+            position = 9
     )
     String extraSettings = "extraSettings";
 
@@ -112,7 +125,7 @@ public interface TickcdConfig extends Config {
             name = "Enable Olm Counter",
             description = "Turn on tick counter for Olm",
             section = extraSettings,
-            position = 9
+            position = 10
     )
     default boolean enableOlm(){return false;}
 
@@ -121,7 +134,8 @@ public interface TickcdConfig extends Config {
             name = "Enable Jad Counter",
             description = "Turn on tick counter for Jad",
             section = extraSettings,
-            position = 10
+            position = 11
     )
     default boolean enableJad(){return false;}
+
 }

@@ -128,6 +128,9 @@ public class TickcdPlugin extends Plugin {
                                     case 4:
                                         selectCol = this.config.npcColor4();
                                         break;
+                                    case 5:
+                                        selectCol = this.config.npcColor5();
+                                        break;
                                 }
                                 //Update existing entry if another animation occurs
                                 Optional<NpcInfo> tempNPC = containsNPC(npcList, npc);
@@ -168,7 +171,7 @@ public class TickcdPlugin extends Plugin {
     }
 
     @Subscribe
-    private void onNpcChanged(final NpcChanged event){
+    public void onNpcChanged(final NpcChanged event){
         final NPC npc = event.getNpc();
 
         if(config.enableOlm()){
@@ -199,10 +202,9 @@ public class TickcdPlugin extends Plugin {
     }
 
     @Subscribe
-    public void onSoundEffectPlayed(SoundEffectPlayed soundEffectPlayed)
+    public void onSoundEffectPlayed(SoundEffectPlayed event)
     {
-        int soundId = soundEffectPlayed.getSoundId();
-        //if(config.enableJad() && soundId == 163 && this.jads.size() == 1){
+        int soundId = event.getSoundId();
         if(config.enableJad() && soundId == 163){
             if(jadCount >= this.jads.size()){
                 jadCount = 0;
