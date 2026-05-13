@@ -16,6 +16,8 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 public class TickcdOverlay extends OverlayPanel {
     private final TickcdPlugin plugin;
     private final TickcdConfig config;
+    private Font cachedFont;
+    private int cachedFontSize;
 
     @Inject
     private TickcdOverlay(TickcdPlugin plugin, TickcdConfig config) {
@@ -42,7 +44,7 @@ public class TickcdOverlay extends OverlayPanel {
             if (textLoc != null) {
                 Point pointShadow = new Point(textLoc.getX() + 1, textLoc.getY() + 1);
                 Font oldFont = graphics.getFont();
-                graphics.setFont(new Font("Arial", Font.PLAIN, this.config.textSize()));
+                graphics.setFont(getFont());
                 OverlayUtil.renderTextLocation(graphics, pointShadow, textOverlay, Color.BLACK);
                 OverlayUtil.renderTextLocation(graphics, textLoc, textOverlay, npcInfo.color);
                 graphics.setFont(oldFont);
@@ -50,5 +52,15 @@ public class TickcdOverlay extends OverlayPanel {
         }
 
         return super.render(graphics);
+    }
+
+    private Font getFont() {
+        int textSize = this.config.textSize();
+        if (cachedFont == null || cachedFontSize != textSize) {
+            cachedFont = new Font("Arial", Font.PLAIN, textSize);
+            cachedFontSize = textSize;
+        }
+
+        return cachedFont;
     }
 }

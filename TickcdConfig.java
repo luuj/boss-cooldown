@@ -129,13 +129,4 @@ public interface TickcdConfig extends Config {
     )
     default boolean enableOlm(){return false;}
 
-    @ConfigItem(
-            keyName = "enableJad",
-            name = "Enable Jad Counter",
-            description = "Turn on tick counter for Jad",
-            section = extraSettings,
-            position = 11
-    )
-    default boolean enableJad(){return false;}
-
 }
