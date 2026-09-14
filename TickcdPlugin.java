@@ -40,6 +40,8 @@ public class TickcdPlugin extends Plugin {
     private static final String ALL_NPC_CONFIG_KEY = "allNPC";
     private static final int OLM_HEAD_NPC_ID = 7554;
     private static final String JAL_AK_NAME = "Jal-Ak";
+    private static final int JAL_AK_BLOCK_ANIMATION = 7585;
+    private static final int JAL_AK_BLOCK_ATTACK_WINDOW_TICKS = 1;
     private static final int NPC_NAME_INDEX = 0;
     private static final int ENTRY_SIZE = 3;
 
@@ -133,6 +135,11 @@ public class TickcdPlugin extends Plugin {
         }
 
         NPC npc = (NPC) actor;
+        if (isJalAkBlockAnimation(npc)) {
+            handleJalAkBlockAnimation(npc);
+            return;
+        }
+
         List<AnimationRule> rules = animationRules.get(actor.getName().toLowerCase(Locale.ROOT));
         if (rules == null) {
             return;
@@ -148,10 +155,29 @@ public class TickcdPlugin extends Plugin {
             if (existingNpc.isPresent()) {
                 existingNpc.get().ticks = rule.ticks;
                 existingNpc.get().color = selectedColor;
+                existingNpc.get().attackTicks = rule.ticks;
+                existingNpc.get().attackColor = selectedColor;
             } else {
                 npcList.add(new NpcInfo(npc, rule.ticks, selectedColor));
             }
             return;
+        }
+    }
+
+    private boolean isJalAkBlockAnimation(NPC npc) {
+        return JAL_AK_NAME.equalsIgnoreCase(npc.getName()) && npc.getAnimation() == JAL_AK_BLOCK_ANIMATION;
+    }
+
+    private void handleJalAkBlockAnimation(NPC npc) {
+        Optional<NpcInfo> existingNpc = containsNPC(npcList, npc);
+        if (!existingNpc.isPresent()) {
+            return;
+        }
+
+        NpcInfo npcInfo = existingNpc.get();
+        if (npcInfo.ticks <= JAL_AK_BLOCK_ATTACK_WINDOW_TICKS) {
+            npcInfo.ticks = npcInfo.attackTicks;
+            npcInfo.color = npcInfo.attackColor;
         }
     }
 
