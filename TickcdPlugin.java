@@ -5,11 +5,12 @@ import com.google.inject.Provides;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -34,6 +35,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
         tags = {"boss", "tick"},
         enabledByDefault = false
 )
+@Slf4j
 public class TickcdPlugin extends Plugin {
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     private static final String CONFIG_GROUP = "tickcd";
@@ -57,7 +59,7 @@ public class TickcdPlugin extends Plugin {
     @Inject
     private TickcdConfig config;
 
-    final List<NpcInfo> npcList = new ArrayList<>();
+    final Map<NPC, NpcInfo> npcInfos = new HashMap<>();
     private final Map<String, List<AnimationRule>> animationRules = new HashMap<>();
 
     private boolean olmActive;
@@ -82,7 +84,7 @@ public class TickcdPlugin extends Plugin {
     }
 
     private void reset() {
-        npcList.clear();
+        npcInfos.clear();
         olmPhase = 1;
         olmActive = false;
     }
@@ -103,8 +105,9 @@ public class TickcdPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        for (int i = npcList.size() - 1; i >= 0; --i) {
-            NpcInfo curr = npcList.get(i);
+        Iterator<NpcInfo> iterator = npcInfos.values().iterator();
+        while (iterator.hasNext()) {
+            NpcInfo curr = iterator.next();
             --curr.ticks;
 
             if (JAL_AK_NAME.equalsIgnoreCase(curr.currNPC.getName()) && curr.ticks == 3) {
@@ -122,7 +125,7 @@ public class TickcdPlugin extends Plugin {
                     continue;
                 }
 
-                npcList.remove(i);
+                iterator.remove();
             }
         }
     }
@@ -151,14 +154,14 @@ public class TickcdPlugin extends Plugin {
             }
 
             Color selectedColor = getConfiguredColor(rule.colorNumber);
-            Optional<NpcInfo> existingNpc = containsNPC(npcList, npc);
-            if (existingNpc.isPresent()) {
-                existingNpc.get().ticks = rule.ticks;
-                existingNpc.get().color = selectedColor;
-                existingNpc.get().attackTicks = rule.ticks;
-                existingNpc.get().attackColor = selectedColor;
+            NpcInfo existingNpc = npcInfos.get(npc);
+            if (existingNpc != null) {
+                existingNpc.ticks = rule.ticks;
+                existingNpc.color = selectedColor;
+                existingNpc.attackTicks = rule.ticks;
+                existingNpc.attackColor = selectedColor;
             } else {
-                npcList.add(new NpcInfo(npc, rule.ticks, selectedColor));
+                npcInfos.put(npc, new NpcInfo(npc, rule.ticks, selectedColor));
             }
             return;
         }
@@ -169,12 +172,11 @@ public class TickcdPlugin extends Plugin {
     }
 
     private void handleJalAkBlockAnimation(NPC npc) {
-        Optional<NpcInfo> existingNpc = containsNPC(npcList, npc);
-        if (!existingNpc.isPresent()) {
+        NpcInfo npcInfo = npcInfos.get(npc);
+        if (npcInfo == null) {
             return;
         }
 
-        NpcInfo npcInfo = existingNpc.get();
         if (npcInfo.ticks <= JAL_AK_BLOCK_ATTACK_WINDOW_TICKS) {
             npcInfo.ticks = npcInfo.attackTicks;
             npcInfo.color = npcInfo.attackColor;
@@ -185,8 +187,9 @@ public class TickcdPlugin extends Plugin {
         animationRules.clear();
 
         for (String str : SPLITTER.splitToList(config.allNPC())) {
-            String[] stringList = str.split(",");
-            if (stringList.length <= ENTRY_SIZE) {
+            String[] stringList = str.split(",", -1);
+            if (stringList.length <= ENTRY_SIZE || (stringList.length - 1) % ENTRY_SIZE != 0) {
+                log.warn("Ignoring malformed NPC animation configuration: {}", str);
                 continue;
             }
 
@@ -201,11 +204,17 @@ public class TickcdPlugin extends Plugin {
                 int entryIndex = (i * ENTRY_SIZE) + 1;
                 try {
                     int animation = Integer.parseInt(stringList[entryIndex].trim());
-                    int ticks = Integer.parseInt(stringList[entryIndex + 1].trim()) + 1;
+                    int configuredTicks = Integer.parseInt(stringList[entryIndex + 1].trim());
                     int colorNumber = Integer.parseInt(stringList[entryIndex + 2].trim());
+                    if (configuredTicks <= 0 || colorNumber < 1 || colorNumber > 5) {
+                        log.warn("Ignoring invalid NPC animation rule: {}", str);
+                        continue;
+                    }
+
+                    int ticks = configuredTicks + 1;
                     rules.add(new AnimationRule(animation, ticks, colorNumber));
                 } catch (NumberFormatException ex) {
-                    // Skip malformed entries without disabling the rest of the config.
+                    log.warn("Ignoring invalid NPC animation rule: {}", str);
                 }
             }
 
@@ -233,6 +242,7 @@ public class TickcdPlugin extends Plugin {
     @Subscribe
     public void onNpcDespawned(final NpcDespawned event) {
         final NPC npc = event.getNpc();
+        npcInfos.remove(npc);
 
         if (config.enableOlm() && npc.getId() == OLM_HEAD_NPC_ID) {
             if (olmPhase == 4) {
@@ -248,19 +258,19 @@ public class TickcdPlugin extends Plugin {
         final NPC npc = event.getNpc();
 
         if (config.enableOlm() && npc.getId() == OLM_HEAD_NPC_ID) {
+            if (npcInfos.containsKey(npc)) {
+                return;
+            }
+
             olmActive = true;
 
             if (olmPhase == 1) {
-                npcList.add(new NpcInfo(npc, 5, config.npcColor()));
+                npcInfos.put(npc, new NpcInfo(npc, 5, config.npcColor()));
             } else {
-                npcList.add(new NpcInfo(npc, 4, config.npcColor()));
+                npcInfos.put(npc, new NpcInfo(npc, 4, config.npcColor()));
             }
             ++olmPhase;
         }
-    }
-
-    private Optional<NpcInfo> containsNPC(final List<NpcInfo> list, final NPC npc) {
-        return list.stream().filter(o -> o.currNPC.equals(npc)).findFirst();
     }
 
     private static class AnimationRule {

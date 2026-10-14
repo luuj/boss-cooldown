@@ -30,7 +30,7 @@ public class TickcdOverlay extends OverlayPanel {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        Iterator<NpcInfo> npcIterator = this.plugin.npcList.iterator();
+        Iterator<NpcInfo> npcIterator = this.plugin.npcInfos.values().iterator();
 
         while(npcIterator.hasNext()) {
             NpcInfo npcInfo = npcIterator.next();
