@@ -33,8 +33,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
         name = "<html><font color=#b82584>[J] Boss Ticks",
-        description = "",
-        tags = {"boss", "tick"},
+        description = "Shows a tick counter over NPCs after configured animations",
+        tags = {"boss", "tick", "counter", "animation", "npc", "overlay"},
         enabledByDefault = false
 )
 @Slf4j
