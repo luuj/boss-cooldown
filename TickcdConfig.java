@@ -1,8 +1,11 @@
 package net.runelite.client.plugins.tickcd;
 
-import net.runelite.client.config.*;
-
-import java.awt.*;
+import java.awt.Color;
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Range;
 
 @ConfigGroup("tickcd")
 public interface TickcdConfig extends Config {
@@ -17,7 +20,7 @@ public interface TickcdConfig extends Config {
             keyName = "allNPC",
             description = "NPC name, animation id, ticks, color number",
             position = 1,
-            section = "animSettings"
+            section = animSettings
     )
     default String allNPC() {
         return "";
@@ -28,7 +31,7 @@ public interface TickcdConfig extends Config {
             name = "Tick Number Color 1",
             description = "Color of tick counter 1",
             position = 2,
-            section = "animSettings"
+            section = animSettings
     )
     default Color npcColor()
     {
@@ -40,7 +43,7 @@ public interface TickcdConfig extends Config {
             name = "Tick Number Color 2",
             description = "Color of tick counter 2",
             position = 3,
-            section = "animSettings"
+            section = animSettings
     )
     default Color npcColor2()
     {
@@ -52,7 +55,7 @@ public interface TickcdConfig extends Config {
             name = "Tick Number Color 3",
             description = "Color of tick counter 3",
             position = 4,
-            section = "animSettings"
+            section = animSettings
     )
     default Color npcColor3()
     {
@@ -64,7 +67,7 @@ public interface TickcdConfig extends Config {
             name = "Tick Number Color 4",
             description = "Color of tick counter 4",
             position = 5,
-            section = "animSettings"
+            section = animSettings
     )
     default Color npcColor4()
     {
@@ -76,7 +79,7 @@ public interface TickcdConfig extends Config {
             name = "Tick Number Color 5",
             description = "Color of tick counter 5",
             position = 6,
-            section = "animSettings"
+            section = animSettings
     )
     default Color npcColor5()
     {
@@ -92,7 +95,7 @@ public interface TickcdConfig extends Config {
             name = "Text Size",
             description = "Sets the text size of the ticks overlay",
             position = 7,
-            section = "animSettings"
+            section = animSettings
     )
     default int textSize() {
         return 30;
@@ -107,7 +110,7 @@ public interface TickcdConfig extends Config {
             keyName = "textZ",
             description = "",
             position = 8,
-            section = "animSettings"
+            section = animSettings
     )
     default int textZ() {
         return 50;
