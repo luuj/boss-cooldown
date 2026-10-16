@@ -14,16 +14,16 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
+import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.gameval.AnimationID;
-import net.runelite.api.gameval.NpcID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -42,10 +42,17 @@ public class TickcdPlugin extends Plugin {
     private static final Splitter SPLITTER = Splitter.on("\n").omitEmptyStrings().trimResults();
     private static final String CONFIG_GROUP = "tickcd";
     private static final String ALL_NPC_CONFIG_KEY = "allNPC";
-    private static final int OLM_HEAD_NPC_ID = NpcID.OLM_HEAD;
-    private static final String JAL_AK_NAME = "Jal-Ak";
-    private static final int JAL_AK_BLOCK_ANIMATION = AnimationID.JALAK_DEFEND;
-    private static final int JAL_AK_BLOCK_ATTACK_WINDOW_TICKS = 1;
+    // NPCs whose flinch (defend) animation can replace their attack animation, so the attack
+    // isn't seen and the counter would run out. Keyed by flinch animation.
+    private static final Map<Integer, FlinchNpc> FLINCH_NPCS = Map.of(
+            // Idle blobs are handled by line of sight in JalAkTracker, so no first-attack start here.
+            AnimationID.JALAK_DEFEND, new FlinchNpc("jal-ak", -1, 0),
+            // Bats attack as soon as they reach you, so a flinch in range can hide their first attack.
+            // Range 4 is from the OpenOSRS Inferno plugin.
+            AnimationID.JALMEJRAH_DEFEND, new FlinchNpc("jal-mejrah", AnimationID.JALMEJRAH_ATTACK, 4)
+    );
+    // A flinch this close to the end of a counter is treated as covering an attack.
+    private static final int FLINCH_ATTACK_WINDOW_TICKS = 1;
     private static final int NPC_NAME_INDEX = 0;
     private static final int ENTRY_SIZE = 3;
 
@@ -66,8 +73,9 @@ public class TickcdPlugin extends Plugin {
     // and only animations that appear in the config pay for a name lookup.
     private final Map<Integer, List<AnimationRule>> animationRules = new HashMap<>();
 
-    private boolean olmActive;
-    private short olmPhase;
+    // Created in startUp(), after injection; events are only delivered while the plugin is running.
+    private JalAkTracker jalAk;
+    private OlmTracker olm;
 
     @Provides
     TickcdConfig getConfig(ConfigManager configManager) {
@@ -76,6 +84,8 @@ public class TickcdPlugin extends Plugin {
 
     @Override
     protected void startUp() {
+        jalAk = new JalAkTracker(client, npcInfos);
+        olm = new OlmTracker(config, npcInfos);
         reset();
         rebuildAnimationRules();
         overlayManager.add(overlay);
@@ -89,8 +99,8 @@ public class TickcdPlugin extends Plugin {
 
     private void reset() {
         npcInfos.clear();
-        olmPhase = 1;
-        olmActive = false;
+        jalAk.reset();
+        olm.reset();
     }
 
     @Subscribe
@@ -112,34 +122,26 @@ public class TickcdPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        if (npcInfos.isEmpty()) {
-            return;
+        for (NpcInfo curr : npcInfos.values()) {
+            --curr.ticks;
         }
+
+        jalAk.startTick();
 
         Iterator<NpcInfo> iterator = npcInfos.values().iterator();
         while (iterator.hasNext()) {
             NpcInfo curr = iterator.next();
-            --curr.ticks;
-
-            if (curr.ticks == 3 && JAL_AK_NAME.equalsIgnoreCase(curr.currNPC.getName())) {
-                Player localPlayer = client.getLocalPlayer();
-                HeadIcon overhead = localPlayer != null ? localPlayer.getOverheadIcon() : null;
-                if (overhead == HeadIcon.MAGIC) {
-                    curr.color = Color.GREEN;
-                } else if (overhead == HeadIcon.RANGED) {
-                    curr.color = Color.CYAN;
-                }
-            }
+            jalAk.onCounterTick(curr);
 
             if (curr.ticks <= 0 || curr.currNPC.isDead()) {
-                if (olmActive && curr.currNPC.getId() == OLM_HEAD_NPC_ID && !curr.currNPC.isDead() && config.enableOlm()) {
-                    curr.ticks += 4;
+                if (olm.restartIfOlm(curr)) {
                     continue;
                 }
-
                 iterator.remove();
             }
         }
+
+        jalAk.endTick();
     }
 
     @Subscribe
@@ -151,8 +153,10 @@ public class TickcdPlugin extends Plugin {
 
         NPC npc = (NPC) actor;
         int animation = npc.getAnimation();
-        if (animation == JAL_AK_BLOCK_ANIMATION && JAL_AK_NAME.equalsIgnoreCase(npc.getName())) {
-            handleJalAkBlockAnimation(npc);
+        FlinchNpc flinch = FLINCH_NPCS.get(animation);
+        // Only swallow the flinch if it started or restarted a counter; otherwise let it reach the
+        // configured animation list in case the flinch animation itself has a rule.
+        if (flinch != null && flinch.name.equalsIgnoreCase(npc.getName()) && handleFlinch(npc, flinch)) {
             return;
         }
 
@@ -179,6 +183,7 @@ public class TickcdPlugin extends Plugin {
                 existingNpc.color = selectedColor;
                 existingNpc.attackTicks = rule.ticks;
                 existingNpc.attackColor = selectedColor;
+                existingNpc.awaitingAttack = false;
             } else {
                 npcInfos.put(npc, new NpcInfo(npc, rule.ticks, selectedColor));
             }
@@ -186,20 +191,54 @@ public class TickcdPlugin extends Plugin {
         }
     }
 
-    private void handleJalAkBlockAnimation(NPC npc) {
-        NpcInfo npcInfo = npcInfos.get(npc);
-        if (npcInfo == null) {
-            return;
+    /**
+     * A flinch can replace the attack animation, so the attack is never seen:
+     * - with a counter on its last tick, restart it for the attack cycle instead of letting it expire;
+     * - with no counter, if the NPC can attack you right now, treat the flinch as its first attack.
+     */
+    private boolean handleFlinch(NPC npc, FlinchNpc flinch) {
+        NpcInfo info = npcInfos.get(npc);
+        if (info != null) {
+            if (info.ticks > FLINCH_ATTACK_WINDOW_TICKS) {
+                return false;
+            }
+            info.ticks = info.attackTicks;
+            info.color = info.attackColor;
+            info.awaitingAttack = false;
+            return true;
         }
 
-        if (npcInfo.ticks <= JAL_AK_BLOCK_ATTACK_WINDOW_TICKS) {
-            npcInfo.ticks = npcInfo.attackTicks;
-            npcInfo.color = npcInfo.attackColor;
+        if (flinch.attackAnimation < 0) {
+            return false;
         }
+        AnimationRule rule = findRule(flinch.attackAnimation, flinch.name);
+        Player player = client.getLocalPlayer();
+        WorldView worldView = client.getTopLevelWorldView();
+        if (rule == null || player == null || worldView == null
+                || !NpcLineOfSight.canAttack(worldView, npc, player.getWorldLocation(), flinch.range)) {
+            return false;
+        }
+
+        npcInfos.put(npc, new NpcInfo(npc, rule.ticks, getConfiguredColor(rule.colorNumber)));
+        return true;
+    }
+
+    private AnimationRule findRule(int animation, String npcName) {
+        List<AnimationRule> rules = animationRules.get(animation);
+        if (rules == null) {
+            return null;
+        }
+        for (AnimationRule rule : rules) {
+            if (rule.npcName.equalsIgnoreCase(npcName)) {
+                return rule;
+            }
+        }
+        return null;
     }
 
     private void rebuildAnimationRules() {
         animationRules.clear();
+        jalAk.resetAttackRule();
 
         for (String str : SPLITTER.splitToList(config.allNPC())) {
             String[] stringList = str.split(",", -1);
@@ -229,6 +268,9 @@ public class TickcdPlugin extends Plugin {
                     int ticks = configuredTicks + 1;
                     animationRules.computeIfAbsent(animation, k -> new ArrayList<>())
                             .add(new AnimationRule(npcKey, ticks, colorNumber));
+                    if (JalAkTracker.NAME.equalsIgnoreCase(npcKey)) {
+                        jalAk.addAttackRule(animation, ticks);
+                    }
                 } catch (NumberFormatException ex) {
                     log.warn("Ignoring invalid NPC animation rule: {}", str);
                 }
@@ -252,36 +294,33 @@ public class TickcdPlugin extends Plugin {
     }
 
     @Subscribe
+    public void onNpcSpawned(final NpcSpawned event) {
+        jalAk.onNpcSpawned(event.getNpc());
+    }
+
+    @Subscribe
     public void onNpcDespawned(final NpcDespawned event) {
         final NPC npc = event.getNpc();
         npcInfos.remove(npc);
-
-        if (npc.getId() == OLM_HEAD_NPC_ID && config.enableOlm()) {
-            if (olmPhase == 4) {
-                olmPhase = 1;
-            }
-            olmActive = false;
-        }
-
+        jalAk.onNpcDespawned(npc);
+        olm.onNpcDespawned(npc);
     }
 
     @Subscribe
     public void onNpcChanged(final NpcChanged event) {
-        final NPC npc = event.getNpc();
+        olm.onNpcChanged(event.getNpc());
+    }
 
-        if (npc.getId() == OLM_HEAD_NPC_ID && config.enableOlm()) {
-            if (npcInfos.containsKey(npc)) {
-                return;
-            }
+    private static class FlinchNpc {
+        private final String name;
+        // Attack animation whose configured rule a first-attack flinch starts; -1 for none.
+        private final int attackAnimation;
+        private final int range;
 
-            olmActive = true;
-
-            if (olmPhase == 1) {
-                npcInfos.put(npc, new NpcInfo(npc, 5, config.npcColor()));
-            } else {
-                npcInfos.put(npc, new NpcInfo(npc, 4, config.npcColor()));
-            }
-            ++olmPhase;
+        private FlinchNpc(String name, int attackAnimation, int range) {
+            this.name = name;
+            this.attackAnimation = attackAnimation;
+            this.range = range;
         }
     }
 

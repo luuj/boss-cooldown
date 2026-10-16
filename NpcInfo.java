@@ -9,6 +9,8 @@ public class NpcInfo {
     public Color color;
     public int attackTicks;
     public Color attackColor;
+    // Started from line of sight rather than a seen attack animation.
+    public boolean awaitingAttack;
 
     public NpcInfo(NPC currNPC, int ticks, Color color) {
         this.currNPC = currNPC;
